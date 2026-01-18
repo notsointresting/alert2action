@@ -10,10 +10,10 @@ Transform security alerts into actionable investigation guides with MITRE ATT&CK
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D14.0.0-green?style=flat-square)](https://nodejs.org)
 
-![MITRE ATT&CK](https://img.shields.io/badge/MITRE%20ATT%26CK-21%20Techniques-red?style=flat-square)
-![SOC](https://img.shields.io/badge/SOC-Automation-blue?style=flat-square)
-![Blue Team](https://img.shields.io/badge/Blue%20Team-Tool-purple?style=flat-square)
-![Incident Response](https://img.shields.io/badge/Incident%20Response-Ready-orange?style=flat-square)
+![MITRE ATT&CK](https://img.shields.io/badge/MITRE%20ATT%26CK-51%20Techniques-red?style=flat-square)
+![VirusTotal](https://img.shields.io/badge/VirusTotal-Integration-green?style=flat-square)
+![TheHive](https://img.shields.io/badge/TheHive-Export-orange?style=flat-square)
+![Splunk](https://img.shields.io/badge/Splunk-CIM%20Ready-blue?style=flat-square)
 
 ## 🎯 What It Does
 
@@ -75,11 +75,13 @@ alert2action <alert-file.json>
 ### Options
 
 ```bash
-alert2action alert.json            # Colored CLI output
-alert2action alert.json -o json    # JSON format
-alert2action alert.json -o markdown # Markdown for tickets
-alert2action alert.json -v         # Verbose mode
-alert2action --help                # Show help
+alert2action alert.json              # Colored CLI output
+alert2action alert.json -o json      # JSON format
+alert2action alert.json -o markdown  # Markdown for tickets
+alert2action alert.json -o thehive   # TheHive case export
+alert2action alert.json --enrich     # VirusTotal enrichment
+alert2action alert.json -v           # Verbose mode
+alert2action --help                  # Show help
 ```
 
 ### Output Formats
@@ -87,6 +89,22 @@ alert2action --help                # Show help
 - **text** (default) - Colorized CLI output for terminal
 - **json** - Raw JSON for integration with other tools
 - **markdown** - Perfect for pasting into tickets/docs
+- **thehive** - TheHive case format (4.x/5.x compatible)
+
+### Threat Intelligence Enrichment (NEW in v1.1.0)
+
+Enrich IOCs with VirusTotal (free tier - 4 requests/min):
+
+```bash
+# Using environment variable
+export VIRUSTOTAL_API_KEY=your_free_api_key
+alert2action alert.json --enrich
+
+# Using flag
+alert2action alert.json --enrich --vt-key your_api_key
+```
+
+Get your free API key at https://www.virustotal.com/gui/join-us
 
 ## 📁 Supported Alert Formats
 
@@ -116,22 +134,23 @@ alert2action automatically normalizes alerts from various sources:
 
 ## 🎯 MITRE ATT&CK Coverage
 
-Currently maps to **21 techniques** across all major tactics:
+Currently maps to **51 techniques** across all 14 tactics:
 
 | Tactic | Techniques |
 |--------|------------|
 | Reconnaissance | T1595 (Active Scanning) |
-| Initial Access | T1566 (Phishing), T1190 (Exploit), T1078 (Valid Accounts) |
-| Execution | T1059 (Command/Script), T1059.001 (PowerShell) |
-| Persistence | T1053 (Scheduled Task), T1547 (Boot Autostart) |
-| Privilege Escalation | T1548.002 (UAC Bypass), T1134 (Token Manipulation) |
-| Defense Evasion | T1055 (Process Injection), T1070 (Indicator Removal) |
-| Credential Access | T1003 (Credential Dumping), T1110 (Brute Force) |
-| Discovery | T1087 (Account Discovery) |
-| Lateral Movement | T1021 (Remote Services) |
-| Command & Control | T1071 (Application Protocol) |
-| Exfiltration | T1041 (Exfil Over C2) |
-| Impact | T1486 (Ransomware) |
+| Initial Access | T1566, T1190, T1078, T1189, T1199 |
+| Execution | T1059, T1059.001, T1204, T1569 |
+| Persistence | T1053, T1547, T1543, T1136 |
+| Privilege Escalation | T1548.002, T1134 |
+| Defense Evasion | T1055, T1070, T1562, T1036, T1218 |
+| Credential Access | T1003, T1110, T1558, T1552 |
+| Discovery | T1087, T1082, T1083, T1069 |
+| Collection | T1560, T1119, T1213 |
+| Lateral Movement | T1021, T1550, T1021.002 |
+| Command & Control | T1071, T1572, T1573 |
+| Exfiltration | T1041 |
+| Impact | T1486, T1485, T1490, T1489 |
 
 ## 📂 Example Alerts Included
 

@@ -106,7 +106,10 @@ function formatText(guide, options) {
     }
 
     if (guide.commands.linux.length > 0) {
-        lines.push(`   ${chalk.bold.magenta('Linux/MacOS:')}`);
+        const linuxHeader = guide.commands.linuxNote
+            ? `Linux/MacOS ${chalk.gray.italic(guide.commands.linuxNote)}`
+            : 'Linux/MacOS:';
+        lines.push(`   ${chalk.bold.magenta(linuxHeader)}`);
         for (const cmd of guide.commands.linux) {
             if (cmd.startsWith('#')) {
                 lines.push(`   ${chalk.gray(cmd)}`);
@@ -212,7 +215,10 @@ function formatMarkdown(guide) {
         lines.push('');
     }
     if (guide.commands.linux.length > 0) {
-        lines.push('### Linux/MacOS');
+        const linuxHeader = guide.commands.linuxNote
+            ? `### Linux/MacOS ${guide.commands.linuxNote}`
+            : '### Linux/MacOS';
+        lines.push(linuxHeader);
         lines.push('```bash');
         lines.push(guide.commands.linux.join('\n'));
         lines.push('```');

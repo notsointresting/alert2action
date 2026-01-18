@@ -77,8 +77,14 @@ function generateWhatHappened(alert) {
     // Network context
     if (alert.sourceIp || alert.destIp) {
         const netContext = [];
-        if (alert.sourceIp) netContext.push(`Source IP: ${alert.sourceIp}`);
-        if (alert.destIp) netContext.push(`Destination IP: ${alert.destIp}`);
+        if (alert.sourceIp) {
+            const isInternal = !isExternalIP(alert.sourceIp);
+            netContext.push(`Source IP: ${alert.sourceIp}${isInternal ? ' (internal - possible lateral movement or local execution)' : ''}`);
+        }
+        if (alert.destIp) {
+            const isExternal = isExternalIP(alert.destIp);
+            netContext.push(`Destination IP: ${alert.destIp}${isExternal ? ' (external - potential C2 or exfiltration)' : ''}`);
+        }
         if (alert.protocol) netContext.push(`Protocol: ${alert.protocol}`);
         parts.push(`**Network:** ${netContext.join(' | ')}`);
     }
@@ -187,9 +193,13 @@ function generateLogsToCheck(alert, mitreMatches) {
  * Generate investigation commands
  */
 function generateCommands(alert, mitreMatches) {
+    // Detect if this is a Windows-specific alert
+    const isWindowsAlert = detectWindowsContext(alert);
+
     const commands = {
         windows: [],
-        linux: []
+        linux: [],
+        linuxNote: isWindowsAlert ? '(Cross-platform reference - use if environment includes Linux/Mac)' : null
     };
 
     // Add technique-specific commands
@@ -244,6 +254,34 @@ function generateCommands(alert, mitreMatches) {
     commands.linux = [...new Set(commands.linux)];
 
     return commands;
+}
+
+/**
+ * Detect if alert is Windows-specific based on context
+ */
+function detectWindowsContext(alert) {
+    const windowsIndicators = [
+        // Process paths
+        alert.processPath?.includes('C:\\'),
+        alert.processPath?.includes('Windows'),
+        // Process names
+        alert.processName?.endsWith('.exe'),
+        alert.processName?.toLowerCase().includes('powershell'),
+        alert.processName?.toLowerCase().includes('schtasks'),
+        alert.processName?.toLowerCase().includes('cmd.exe'),
+        // Command line
+        alert.processCommandLine?.includes('C:\\'),
+        alert.processCommandLine?.includes('powershell'),
+        // Hostname patterns
+        alert.hostname?.includes('.local'),
+        alert.hostname?.match(/^[A-Z]+-?[A-Z0-9]+$/i),  // WORKSTATION-01 pattern
+        // Source indicators
+        alert.source?.toLowerCase().includes('defender'),
+        alert.source?.toLowerCase().includes('windows'),
+        alert.source?.toLowerCase().includes('sysmon')
+    ];
+
+    return windowsIndicators.filter(Boolean).length >= 2;
 }
 
 /**

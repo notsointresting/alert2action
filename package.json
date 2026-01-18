@@ -1,7 +1,7 @@
 {
   "name": "alert2action",
   "version": "1.0.0",
-  "description": "SOC Alert to Investigation Guide CLI - Transform security alerts into actionable investigation playbooks",
+  "description": "SOC Alert to Investigation Guide CLI - Transform security alerts into actionable investigation playbooks with MITRE ATT&CK mapping",
   "main": "src/index.js",
   "bin": {
     "alert2action": "./bin/alert2action.js"
@@ -14,6 +14,14 @@
     "lint": "node --check bin/alert2action.js src/*.js",
     "prepublishOnly": "npm run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/notsointresting/alert2action.git"
+  },
+  "homepage": "https://github.com/notsointresting/alert2action#readme",
+  "bugs": {
+    "url": "https://github.com/notsointresting/alert2action/issues"
+  },
   "keywords": [
     "soc",
     "security",
@@ -24,9 +32,11 @@
     "cli",
     "cybersecurity",
     "siem",
-    "playbook"
+    "playbook",
+    "alert",
+    "blue-team"
   ],
-  "author": "",
+  "author": "notsointresting",
   "license": "MIT",
   "dependencies": {
     "chalk": "^4.1.2",

@@ -41,7 +41,7 @@ npm install -g alert2action
 ### Or Clone from GitHub
 
 ```bash
-git clone https://github.com/yourusername/alert2action.git
+git clone https://github.com/notsointresting/alert2action.git
 cd alert2action
 npm install
 npm link  # Makes it globally available

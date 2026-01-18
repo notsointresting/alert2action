@@ -8,7 +8,11 @@
   },
   "scripts": {
     "start": "node bin/alert2action.js",
-    "test": "node bin/alert2action.js examples/brute-force-alert.json"
+    "build": "echo 'No build step required - pure JavaScript CLI' && node -c bin/alert2action.js && node -c src/index.js",
+    "test": "node bin/alert2action.js examples/brute-force-alert.json",
+    "test:all": "node bin/alert2action.js examples/brute-force-alert.json && node bin/alert2action.js examples/malware-alert.json && node bin/alert2action.js examples/phishing-alert.json",
+    "lint": "node --check bin/alert2action.js src/*.js",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "soc",

@@ -1,0 +1,34 @@
+{
+  "name": "alert2action",
+  "version": "1.0.0",
+  "description": "SOC Alert to Investigation Guide CLI - Transform security alerts into actionable investigation playbooks",
+  "main": "src/index.js",
+  "bin": {
+    "alert2action": "./bin/alert2action.js"
+  },
+  "scripts": {
+    "start": "node bin/alert2action.js",
+    "test": "node bin/alert2action.js examples/brute-force-alert.json"
+  },
+  "keywords": [
+    "soc",
+    "security",
+    "mitre-attack",
+    "incident-response",
+    "threat-detection",
+    "investigation",
+    "cli",
+    "cybersecurity",
+    "siem",
+    "playbook"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

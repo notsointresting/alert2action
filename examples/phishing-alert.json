@@ -1,0 +1,28 @@
+{
+    "id": "ALERT-2024-0129",
+    "title": "Phishing Email with Malicious Attachment Detected",
+    "description": "Email containing suspicious Office document with macro detected and quarantined",
+    "severity": "medium",
+    "timestamp": "2024-01-18T09:15:30Z",
+    "source": "Microsoft Defender for Office 365",
+    "category": "Initial Access",
+    "hostname": "MAIL-GW01",
+    "username": "mwilliams@company.com",
+    "data": {
+        "sender_email": "invoice@secure-payment-portal.com",
+        "sender_ip": "192.168.45.23",
+        "recipient": "mwilliams@company.com",
+        "subject": "URGENT: Invoice #INV-2024-8872 - Payment Required",
+        "attachment_name": "Invoice_Details_2024.xlsm",
+        "attachment_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "has_macro": true,
+        "links_in_body": [
+            "http://malicious-link.com/track/12345"
+        ],
+        "verdict": "Phishing",
+        "action_taken": "Quarantined"
+    },
+    "event_type": "Email Threat",
+    "action": "quarantined",
+    "status": "contained"
+}

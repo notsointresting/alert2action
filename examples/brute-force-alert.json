@@ -1,0 +1,33 @@
+{
+    "id": "ALERT-2024-0127",
+    "title": "Multiple Failed Login Attempts Detected",
+    "description": "Over 50 failed authentication attempts detected from a single source IP within 5 minutes, indicating potential brute force attack",
+    "severity": "high",
+    "timestamp": "2024-01-18T10:30:00Z",
+    "source": "Windows Security",
+    "category": "Credential Access",
+    "source_ip": "185.220.101.45",
+    "dest_ip": "10.0.0.50",
+    "dest_port": 3389,
+    "protocol": "RDP",
+    "hostname": "DC01.corp.local",
+    "username": "administrator",
+    "domain": "CORP",
+    "event_type": "Authentication Failure",
+    "action": "blocked",
+    "status": "ongoing",
+    "data": {
+        "failed_attempts": 57,
+        "time_window_minutes": 5,
+        "targeted_accounts": [
+            "administrator",
+            "admin",
+            "svc_backup",
+            "sql_admin"
+        ],
+        "event_ids": [
+            4625,
+            4771
+        ]
+    }
+}

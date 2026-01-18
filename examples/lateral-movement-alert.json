@@ -1,0 +1,29 @@
+{
+    "id": "ALERT-2024-0131",
+    "title": "Suspicious Lateral Movement via PsExec Detected",
+    "description": "Remote execution attempt using PsExec from workstation to domain controller detected",
+    "severity": "high",
+    "timestamp": "2024-01-18T11:08:45Z",
+    "source": "Microsoft Defender for Identity",
+    "category": "Lateral Movement",
+    "source_ip": "10.0.1.155",
+    "dest_ip": "10.0.0.10",
+    "dest_port": 445,
+    "protocol": "SMB",
+    "hostname": "WORKSTATION-089",
+    "username": "admin.jones",
+    "domain": "CORP",
+    "process_name": "PSEXESVC.exe",
+    "process_path": "\\\\DC01\\ADMIN$\\PSEXESVC.exe",
+    "process_command_line": "psexec.exe \\\\DC01 -s cmd.exe",
+    "data": {
+        "source_machine": "WORKSTATION-089",
+        "target_machine": "DC01",
+        "service_created": "PSEXESVC",
+        "authentication_type": "NTLM",
+        "lateral_movement_type": "PsExec"
+    },
+    "event_type": "Remote Execution",
+    "action": "detected",
+    "status": "active"
+}

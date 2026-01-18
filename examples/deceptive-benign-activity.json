@@ -1,0 +1,48 @@
+{
+    "event_id": "SYS-INFO-78421",
+    "event_type": "system_activity",
+    "severity": "informational",
+    "risk_level": "low",
+    "status": "allowed",
+    "timestamp": "2026-01-18T14:32:10Z",
+    "source": {
+        "asset_id": "ASSET-2217",
+        "environment": "corporate_network",
+        "asset_type": "endpoint"
+    },
+    "activity": {
+        "action": "process_execution",
+        "result": "success",
+        "execution_context": "user_space"
+    },
+    "process": {
+        "process_name": "svchost.exe",
+        "process_path": "C:\\Users\\Public\\svchost.exe",
+        "process_category": "system_service",
+        "parent_process": "cmd.exe",
+        "integrity_level": "medium"
+    },
+    "network": {
+        "protocol": "HTTPS",
+        "direction": "outbound",
+        "destination_port": 443,
+        "network_zone": "external"
+    },
+    "detection": {
+        "engine": "SOC-Monitor",
+        "rule_id": "INFO-PROC-BASELINE",
+        "confidence": 0.18,
+        "description": "Common system process execution with outbound HTTPS traffic"
+    },
+    "response": {
+        "action_taken": "none",
+        "alert_generated": false,
+        "escalation_required": false
+    },
+    "tags": [
+        "baseline",
+        "allowed",
+        "low-noise",
+        "system-process"
+    ]
+}

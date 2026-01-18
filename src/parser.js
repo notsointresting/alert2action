@@ -53,43 +53,43 @@ function parseAlert(rawAlert) {
         keywords: []
     };
 
-    // Try to extract from common field patterns
-    normalized.id = extractField(rawAlert, ['id', 'alert_id', 'event_id', 'alertId', 'eventId', '_id', 'uuid', 'host_id']);
-    normalized.title = extractField(rawAlert, ['title', 'name', 'alert_name', 'alertName', 'rule_name', 'ruleName', 'signature', 'event_type', 'eventType', 'rule_name', 'summary']);
-    normalized.description = extractField(rawAlert, ['description', 'message', 'msg', 'details', 'summary', 'reason', 'technique_details']);
-    normalized.severity = normalizeSeverity(extractField(rawAlert, ['severity', 'event_severity', 'priority', 'risk_level', 'riskLevel', 'threat_level', 'urgency', 'criticality']));
-    normalized.timestamp = extractField(rawAlert, ['timestamp', 'time', 'created_at', 'createdAt', 'detection_time', '@timestamp', 'event_time', 'eventTime', 'ingested_time']);
-    normalized.source = extractField(rawAlert, ['source', 'product', 'vendor', 'tool', 'detector', 'data_source', 'log_source']);
+    // Try to extract from common field patterns (including Splunk CIM)
+    normalized.id = extractField(rawAlert, ['id', 'alert_id', 'event_id', 'alertId', 'eventId', '_id', 'uuid', 'host_id', 'sid', 'search_id']);
+    normalized.title = extractField(rawAlert, ['title', 'name', 'alert_name', 'alertName', 'rule_name', 'ruleName', 'signature', 'event_type', 'eventType', 'rule_name', 'summary', 'search_name', 'savedsearch_name']);
+    normalized.description = extractField(rawAlert, ['description', 'message', 'msg', 'details', 'summary', 'reason', 'technique_details', 'search_description']);
+    normalized.severity = normalizeSeverity(extractField(rawAlert, ['severity', 'event_severity', 'priority', 'risk_level', 'riskLevel', 'threat_level', 'urgency', 'criticality', 'risk_score', 'info_min_time']));
+    normalized.timestamp = extractField(rawAlert, ['timestamp', 'time', 'created_at', 'createdAt', 'detection_time', '@timestamp', 'event_time', 'eventTime', 'ingested_time', '_time', 'trigger_time', 'index_time']);
+    normalized.source = extractField(rawAlert, ['source', 'product', 'vendor', 'tool', 'detector', 'data_source', 'log_source', 'sourcetype', 'eventtype', 'index']);
 
-    // Network
-    normalized.sourceIp = extractField(rawAlert, ['source_ip', 'sourceIp', 'src_ip', 'srcIp', 'src', 'attacker_ip', 'remote_ip', 'client_ip', 'ip_address']);
-    normalized.destIp = extractField(rawAlert, ['dest_ip', 'destIp', 'dst_ip', 'dstIp', 'dst', 'destination_ip', 'target_ip', 'server_ip', 'local_ip']);
-    normalized.sourcePort = extractField(rawAlert, ['source_port', 'sourcePort', 'src_port', 'srcPort']);
-    normalized.destPort = extractField(rawAlert, ['dest_port', 'destPort', 'dst_port', 'dstPort', 'port']);
-    normalized.protocol = extractField(rawAlert, ['protocol', 'proto', 'network_protocol']);
+    // Network (Splunk Network CIM)
+    normalized.sourceIp = extractField(rawAlert, ['source_ip', 'sourceIp', 'src_ip', 'srcIp', 'src', 'attacker_ip', 'remote_ip', 'client_ip', 'ip_address', 'src_ip_addr', 'orig_src']);
+    normalized.destIp = extractField(rawAlert, ['dest_ip', 'destIp', 'dst_ip', 'dstIp', 'dst', 'destination_ip', 'target_ip', 'server_ip', 'local_ip', 'dest', 'dest_ip_addr', 'orig_dest']);
+    normalized.sourcePort = extractField(rawAlert, ['source_port', 'sourcePort', 'src_port', 'srcPort', 'orig_src_port']);
+    normalized.destPort = extractField(rawAlert, ['dest_port', 'destPort', 'dst_port', 'dstPort', 'port', 'dest_port', 'orig_dest_port']);
+    normalized.protocol = extractField(rawAlert, ['protocol', 'proto', 'network_protocol', 'transport', 'app_protocol']);
 
-    // Host
-    normalized.hostname = extractField(rawAlert, ['hostname', 'host', 'computer_name', 'computerName', 'machine', 'device_name', 'endpoint']);
-    normalized.username = extractField(rawAlert, ['username', 'user', 'user_name', 'userName', 'account', 'account_name', 'actor', 'original_user', 'escalated_user']);
-    normalized.domain = extractField(rawAlert, ['domain', 'domain_name', 'ad_domain']);
+    // Host (Splunk Endpoint CIM)
+    normalized.hostname = extractField(rawAlert, ['hostname', 'host', 'computer_name', 'computerName', 'machine', 'device_name', 'endpoint', 'dvc', 'dvc_host', 'dest_host', 'src_host']);
+    normalized.username = extractField(rawAlert, ['username', 'user', 'user_name', 'userName', 'account', 'account_name', 'actor', 'original_user', 'escalated_user', 'src_user', 'dest_user', 'owner']);
+    normalized.domain = extractField(rawAlert, ['domain', 'domain_name', 'ad_domain', 'nt_domain', 'user_domain']);
 
-    // Process
-    normalized.processName = extractField(rawAlert, ['process_name', 'processName', 'process', 'image', 'exe', 'executable', 'suspicious_binary']);
-    normalized.processPath = extractField(rawAlert, ['process_path', 'processPath', 'image_path', 'file_path', 'exe_path', 'service_binary']);
-    normalized.processCommandLine = extractField(rawAlert, ['command_line', 'commandLine', 'cmdline', 'cmd', 'process_command_line', 'command']);
-    normalized.parentProcess = extractField(rawAlert, ['parent_process', 'parentProcess', 'parent_image', 'parent']);
-    normalized.processId = extractField(rawAlert, ['process_id', 'processId', 'pid']);
+    // Process (Splunk Endpoint CIM)
+    normalized.processName = extractField(rawAlert, ['process_name', 'processName', 'process', 'image', 'exe', 'executable', 'suspicious_binary', 'process_exec', 'process_file_name']);
+    normalized.processPath = extractField(rawAlert, ['process_path', 'processPath', 'image_path', 'file_path', 'exe_path', 'service_binary', 'process_file_path']);
+    normalized.processCommandLine = extractField(rawAlert, ['command_line', 'commandLine', 'cmdline', 'cmd', 'process_command_line', 'command', 'process_cmd']);
+    normalized.parentProcess = extractField(rawAlert, ['parent_process', 'parentProcess', 'parent_image', 'parent', 'parent_process_name', 'parent_cmd', 'parent_file_path']);
+    normalized.processId = extractField(rawAlert, ['process_id', 'processId', 'pid', 'process_pid']);
 
-    // File
-    normalized.filePath = extractField(rawAlert, ['file_path', 'filePath', 'path', 'target_path', 'service_binary']);
-    normalized.fileHash = extractField(rawAlert, ['file_hash', 'fileHash', 'hash', 'md5', 'sha256', 'sha1']);
-    normalized.fileName = extractField(rawAlert, ['file_name', 'fileName', 'filename', 'file', 'suspicious_binary']);
+    // File (Splunk Change Analysis CIM)
+    normalized.filePath = extractField(rawAlert, ['file_path', 'filePath', 'path', 'target_path', 'service_binary', 'object_path', 'dest_file_path']);
+    normalized.fileHash = extractField(rawAlert, ['file_hash', 'fileHash', 'hash', 'md5', 'sha256', 'sha1', 'file_md5', 'file_sha256', 'file_sha1']);
+    normalized.fileName = extractField(rawAlert, ['file_name', 'fileName', 'filename', 'file', 'suspicious_binary', 'object_name', 'dest_file_name']);
 
     // Context
-    normalized.category = extractField(rawAlert, ['category', 'type', 'alert_type', 'alertType', 'tactic', 'technique', 'method', 'vector']);
-    normalized.action = extractField(rawAlert, ['action', 'event_action', 'result', 'outcome', 'success']);
-    normalized.status = extractField(rawAlert, ['status', 'state', 'resolution', 'event_status', 'isolation_status']);
-    normalized.eventType = extractField(rawAlert, ['event_type', 'eventType', 'type', 'activity_type']);
+    normalized.category = extractField(rawAlert, ['category', 'type', 'alert_type', 'alertType', 'tactic', 'technique', 'method', 'vector', 'rule_category', 'analytic_type']);
+    normalized.action = extractField(rawAlert, ['action', 'event_action', 'result', 'outcome', 'success', 'vendor_action', 'dvc_action']);
+    normalized.status = extractField(rawAlert, ['status', 'state', 'resolution', 'event_status', 'isolation_status', 'alert_status', 'notable_status']);
+    normalized.eventType = extractField(rawAlert, ['event_type', 'eventType', 'type', 'activity_type', 'signature_type', 'event_category']);
 
     // Extract keywords for MITRE mapping
     normalized.keywords = extractKeywords(normalized);

@@ -729,6 +729,376 @@ const MITRE_TECHNIQUES = {
             'Cached credentials after password change',
             'Service accounts with expired passwords'
         ]
+    },
+
+    // ===== COLLECTION (TA0009) =====
+    'T1560': {
+        id: 'T1560',
+        name: 'Archive Collected Data',
+        tactic: 'Collection',
+        description: 'Adversaries archive collected data for exfiltration',
+        keywords: ['archive', 'zip', 'rar', '7z', 'compress', 'staging'],
+        logsToCheck: ['File creation logs', 'Process creation logs', 'EDR file activity'],
+        commands: {
+            windows: ['Get-ChildItem -Path C:\\ -Recurse -Include "*.zip","*.rar","*.7z" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 20'],
+            linux: ['find / -name "*.zip" -o -name "*.tar.gz" -mtime -1 2>/dev/null']
+        },
+        containment: ['Quarantine archive files', 'Block archive creation tools', 'Monitor staging directories'],
+        falsePositives: ['Legitimate backups', 'Software distribution', 'User file compression']
+    },
+
+    'T1119': {
+        id: 'T1119',
+        name: 'Automated Collection',
+        tactic: 'Collection',
+        description: 'Adversaries use automated techniques to collect data',
+        keywords: ['automated collection', 'data harvesting', 'bulk', 'scraping'],
+        logsToCheck: ['File access logs', 'Database query logs', 'Network traffic'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="Security";Id=4663} -MaxEvents 100'],
+            linux: ['ausearch -m OPEN -ts today | head -50']
+        },
+        containment: ['Rate limit data access', 'Enable DLP', 'Monitor bulk file operations'],
+        falsePositives: ['Backup software', 'Indexing services', 'Legitimate data exports']
+    },
+
+    'T1213': {
+        id: 'T1213',
+        name: 'Data from Information Repositories',
+        tactic: 'Collection',
+        description: 'Adversaries collect data from SharePoint, Confluence, etc.',
+        keywords: ['sharepoint', 'confluence', 'wiki', 'repository', 'intranet'],
+        logsToCheck: ['SharePoint audit logs', 'Confluence access logs', 'O365 audit logs'],
+        commands: {
+            windows: ['Search-UnifiedAuditLog -Operations FileDownloaded,FileAccessed -StartDate (Get-Date).AddDays(-1)'],
+            linux: ['grep -i "download\\|export" /var/log/application.log']
+        },
+        containment: ['Revoke suspicious session tokens', 'Review permissions', 'Enable download alerts'],
+        falsePositives: ['Normal employee research', 'Onboarding activities', 'Authorized exports']
+    },
+
+    // ===== MORE DEFENSE EVASION =====
+    'T1562': {
+        id: 'T1562',
+        name: 'Impair Defenses',
+        tactic: 'Defense Evasion',
+        description: 'Adversaries disable security tools to evade detection',
+        keywords: ['disable', 'av', 'antivirus', 'edr', 'firewall', 'defender', 'tamper'],
+        logsToCheck: ['Windows Defender logs', 'EDR status logs', 'Windows Security Event 4688'],
+        commands: {
+            windows: ['Get-MpPreference | Select-Object DisableRealtimeMonitoring', 'Get-Service WinDefend | Select-Object Status'],
+            linux: ['systemctl status clamd', 'auditctl -l']
+        },
+        containment: ['Re-enable security tools', 'Isolate endpoint', 'Investigate root cause'],
+        falsePositives: ['IT maintenance', 'Software conflicts', 'Temporary disable for testing']
+    },
+
+    'T1036': {
+        id: 'T1036',
+        name: 'Masquerading',
+        tactic: 'Defense Evasion',
+        description: 'Adversaries disguise malicious files or processes',
+        keywords: ['masquerading', 'rename', 'disguise', 'fake', 'impersonate', 'svchost'],
+        logsToCheck: ['Sysmon Event ID 1', 'File rename logs', 'Process creation with path'],
+        commands: {
+            windows: ['Get-Process | Where-Object {$_.Path -notmatch "System32" -and $_.Name -match "svchost|csrss|lsass"}'],
+            linux: ['ps aux | grep -v "/usr/bin\\|/bin\\|/sbin"']
+        },
+        containment: ['Terminate suspicious processes', 'Block file hashes', 'Investigate binary origin'],
+        falsePositives: ['Portable applications', 'Developer testing', 'Non-standard installations']
+    },
+
+    'T1218': {
+        id: 'T1218',
+        name: 'Signed Binary Proxy Execution',
+        tactic: 'Defense Evasion',
+        description: 'Adversaries use signed binaries to proxy execution of malicious code',
+        keywords: ['lolbin', 'mshta', 'regsvr32', 'rundll32', 'certutil', 'signed binary'],
+        logsToCheck: ['Sysmon Event ID 1', 'Windows Security 4688', 'EDR process logs'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational";Id=1} | Where-Object {$_.Message -match "mshta|regsvr32|rundll32|certutil|bitsadmin"}'],
+            linux: ['N/A - Windows specific']
+        },
+        containment: ['Block suspicious command lines', 'Enable AppLocker rules', 'Monitor LOLBIN usage'],
+        falsePositives: ['Legitimate admin scripts', 'Software installations', 'Certificate operations']
+    },
+
+    // ===== MORE DISCOVERY =====
+    'T1082': {
+        id: 'T1082',
+        name: 'System Information Discovery',
+        tactic: 'Discovery',
+        description: 'Adversaries gather system configuration information',
+        keywords: ['systeminfo', 'hostname', 'uname', 'system information', 'discovery'],
+        logsToCheck: ['Sysmon Event ID 1', 'Process audit logs', 'Command line logging'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational";Id=1} | Where-Object {$_.Message -match "systeminfo|hostname|ipconfig"}'],
+            linux: ['grep -E "uname|hostnamectl|cat /etc/os-release" /var/log/auth.log']
+        },
+        containment: ['Correlate with other discovery', 'Monitor for lateral movement', 'Alert on enumeration chains'],
+        falsePositives: ['IT troubleshooting', 'Inventory scripts', 'Monitoring tools']
+    },
+
+    'T1083': {
+        id: 'T1083',
+        name: 'File and Directory Discovery',
+        tactic: 'Discovery',
+        description: 'Adversaries enumerate files and directories',
+        keywords: ['dir', 'ls', 'find', 'tree', 'file discovery', 'directory'],
+        logsToCheck: ['Sysmon Event ID 1', 'File access audit logs', 'EDR telemetry'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational";Id=1} | Where-Object {$_.Message -match "dir.*recurse|tree|Get-ChildItem.*Recurse"}'],
+            linux: ['ausearch -c find -ts today', 'grep -E "find /|ls -la" /var/log/auth.log']
+        },
+        containment: ['Monitor for sensitive file access', 'Enable file integrity monitoring'],
+        falsePositives: ['File searches', 'Backup verification', 'Legitimate admin tasks']
+    },
+
+    'T1069': {
+        id: 'T1069',
+        name: 'Permission Groups Discovery',
+        tactic: 'Discovery',
+        description: 'Adversaries discover local and domain permission groups',
+        keywords: ['net group', 'net localgroup', 'domain admins', 'groups', 'permission'],
+        logsToCheck: ['Windows Security Event 4799', 'Sysmon Event ID 1', 'LDAP query logs'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational";Id=1} | Where-Object {$_.Message -match "net group|net localgroup|Get-ADGroup"}'],
+            linux: ['grep "getent group" /var/log/auth.log']
+        },
+        containment: ['Monitor for subsequent privilege escalation', 'Review group memberships'],
+        falsePositives: ['IT administration', 'Security audits', 'Compliance checks']
+    },
+
+    // ===== MORE PERSISTENCE =====
+    'T1543': {
+        id: 'T1543',
+        name: 'Create or Modify System Process',
+        tactic: 'Persistence',
+        description: 'Adversaries create or modify system services for persistence',
+        keywords: ['service', 'daemon', 'systemd', 'sc create', 'new-service'],
+        logsToCheck: ['Windows Security Event 4697', 'Sysmon Event ID 1', 'Systemd logs'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="Security";Id=4697} -MaxEvents 20', 'Get-Service | Where-Object {$_.StartType -eq "Automatic" -and $_.Status -eq "Running"}'],
+            linux: ['systemctl list-unit-files --type=service --state=enabled', 'journalctl -u <service>']
+        },
+        containment: ['Disable malicious services', 'Remove service registry entries', 'Re-image if needed'],
+        falsePositives: ['Software installations', 'IT deployments', 'Legitimate service updates']
+    },
+
+    'T1136': {
+        id: 'T1136',
+        name: 'Create Account',
+        tactic: 'Persistence',
+        description: 'Adversaries create new accounts to maintain access',
+        keywords: ['create account', 'new user', 'net user add', 'useradd', 'adduser'],
+        logsToCheck: ['Windows Security Event 4720', 'Linux /var/log/auth.log', 'Azure AD audit logs'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="Security";Id=4720} -MaxEvents 20', 'Get-LocalUser | Where-Object {$_.Enabled -eq $true}'],
+            linux: ['grep "useradd\\|adduser" /var/log/auth.log', 'cat /etc/passwd | tail -10']
+        },
+        containment: ['Disable rogue accounts', 'Reset passwords', 'Audit all recent account creations'],
+        falsePositives: ['IT onboarding', 'Service account creation', 'Contractors']
+    },
+
+    // ===== MORE INITIAL ACCESS =====
+    'T1189': {
+        id: 'T1189',
+        name: 'Drive-by Compromise',
+        tactic: 'Initial Access',
+        description: 'Adversaries compromise users through malicious websites',
+        keywords: ['drive-by', 'watering hole', 'browser exploit', 'malvertising', 'iframe'],
+        logsToCheck: ['Web proxy logs', 'Browser history', 'DNS logs', 'EDR browser events'],
+        commands: {
+            windows: ['Get-WinEvent -LogName "Microsoft-Windows-Sysmon/Operational" | Where-Object {$_.Id -eq 3 -and $_.Message -match "iexplore|chrome|firefox|edge"}'],
+            linux: ['grep -E "GET.*\\.js|GET.*\\.html" /var/log/squid/access.log']
+        },
+        containment: ['Block malicious domains', 'Patch browsers', 'Enable browser isolation'],
+        falsePositives: ['Legitimate ad networks', 'Marketing trackers', 'CDN resources']
+    },
+
+    'T1199': {
+        id: 'T1199',
+        name: 'Trusted Relationship',
+        tactic: 'Initial Access',
+        description: 'Adversaries abuse trusted third-party relationships',
+        keywords: ['supply chain', 'vendor', 'third party', 'msp', 'trusted relationship'],
+        logsToCheck: ['VPN logs', 'Third-party access logs', 'Service account activity'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="Security";Id=4624} | Where-Object {$_.Properties[5].Value -match "vendor|msp|support"}'],
+            linux: ['grep -E "vendor|support|msp" /var/log/auth.log']
+        },
+        containment: ['Revoke vendor access', 'Audit third-party permissions', 'Segment vendor networks'],
+        falsePositives: ['Legitimate vendor support', 'Managed service activity', 'Authorized remote access']
+    },
+
+    // ===== MORE CREDENTIAL ACCESS =====
+    'T1558': {
+        id: 'T1558',
+        name: 'Steal or Forge Kerberos Tickets',
+        tactic: 'Credential Access',
+        description: 'Adversaries steal or forge Kerberos tickets for access',
+        keywords: ['kerberos', 'golden ticket', 'silver ticket', 'kerberoast', 'pass-the-ticket'],
+        logsToCheck: ['Windows Security Event 4769', 'Domain Controller logs', 'Kerberos authentication logs'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="Security";Id=4769} | Where-Object {$_.Properties[4].Value -eq "0x17"}', 'klist'],
+            linux: ['N/A - Windows/AD specific']
+        },
+        containment: ['Reset KRBTGT twice', 'Disable compromised accounts', 'Review SPNs'],
+        falsePositives: ['Legitimate Kerberos usage', 'Service authentication', 'SSO systems']
+    },
+
+    'T1552': {
+        id: 'T1552',
+        name: 'Unsecured Credentials',
+        tactic: 'Credential Access',
+        description: 'Adversaries search for unsecured credentials in files',
+        keywords: ['password file', 'credentials', '.env', 'config file', 'plaintext password'],
+        logsToCheck: ['File access logs', 'Sysmon Event ID 1', 'EDR file read events'],
+        commands: {
+            windows: ['Get-ChildItem -Path C:\\ -Recurse -Include "*.config","*.xml","*.ini" -ErrorAction SilentlyContinue | Select-String -Pattern "password|credential|secret" | Select-Object -First 10'],
+            linux: ['grep -r "password\\|secret\\|api_key" /etc /home 2>/dev/null | head -20']
+        },
+        containment: ['Rotate exposed credentials', 'Enable secrets management', 'Remove plaintext passwords'],
+        falsePositives: ['Configuration management', 'Development environments', 'Documentation']
+    },
+
+    // ===== MORE EXECUTION =====
+    'T1204': {
+        id: 'T1204',
+        name: 'User Execution',
+        tactic: 'Execution',
+        description: 'Adversaries rely on users to execute malicious content',
+        keywords: ['user execution', 'click', 'open', 'run', 'double-click', 'attachment'],
+        logsToCheck: ['Sysmon Event ID 1', 'Email gateway logs', 'EDR process creation'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational";Id=1} | Where-Object {$_.Message -match "Downloads|Temp|AppData"}'],
+            linux: ['ausearch -c bash -ts today | head -50']
+        },
+        containment: ['Block executable extensions in email', 'User awareness training', 'Enable Mark of the Web'],
+        falsePositives: ['Legitimate downloads', 'Software installations', 'Document attachments']
+    },
+
+    'T1569': {
+        id: 'T1569',
+        name: 'System Services',
+        tactic: 'Execution',
+        description: 'Adversaries abuse system services for code execution',
+        keywords: ['service execution', 'sc start', 'systemctl start', 'service control'],
+        logsToCheck: ['Windows Security Event 7045', 'Windows Security Event 4697', 'Sysmon logs'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="System";Id=7045} -MaxEvents 20'],
+            linux: ['journalctl -u <service> --since "1 hour ago"']
+        },
+        containment: ['Stop malicious services', 'Remove from registry', 'Block service binaries'],
+        falsePositives: ['IT operations', 'Software updates', 'Restart operations']
+    },
+
+    // ===== IMPACT =====
+    'T1485': {
+        id: 'T1485',
+        name: 'Data Destruction',
+        tactic: 'Impact',
+        description: 'Adversaries destroy data to disrupt availability',
+        keywords: ['delete', 'wipe', 'destroy', 'rm -rf', 'format', 'destruction'],
+        logsToCheck: ['File deletion logs', 'Sysmon Event ID 23', 'Volume shadow copy logs'],
+        commands: {
+            windows: ['vssadmin list shadows', 'Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational";Id=23} -MaxEvents 50'],
+            linux: ['ausearch -m DEL -ts today', 'df -h']
+        },
+        containment: ['Isolate immediately', 'Preserve backups', 'Stop destructive processes'],
+        falsePositives: ['Disk cleanup', 'File rotation', 'Legitimate deletions']
+    },
+
+    'T1490': {
+        id: 'T1490',
+        name: 'Inhibit System Recovery',
+        tactic: 'Impact',
+        description: 'Adversaries disable recovery features',
+        keywords: ['vssadmin delete', 'bcdedit', 'recovery', 'shadow copy', 'backup delete'],
+        logsToCheck: ['Windows Security logs', 'Sysmon Event ID 1', 'Volume shadow copy logs'],
+        commands: {
+            windows: ['vssadmin list shadows', 'Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational";Id=1} | Where-Object {$_.Message -match "vssadmin|bcdedit|wbadmin"}'],
+            linux: ['N/A - Windows specific']
+        },
+        containment: ['CRITICAL: Isolate immediately', 'Preserve remaining shadows', 'Assess backup integrity'],
+        falsePositives: ['IT maintenance', 'Disk space cleanup', 'System rebuild']
+    },
+
+    'T1489': {
+        id: 'T1489',
+        name: 'Service Stop',
+        tactic: 'Impact',
+        description: 'Adversaries stop services to disrupt operations',
+        keywords: ['service stop', 'stop-service', 'sc stop', 'kill', 'shutdown'],
+        logsToCheck: ['Windows Security Event 7036', 'Sysmon logs', 'Service control logs'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="System";Id=7036} -MaxEvents 50 | Where-Object {$_.Message -match "stopped"}'],
+            linux: ['journalctl -u <service> | grep -i "stop\\|kill"']
+        },
+        containment: ['Restart critical services', 'Investigate cause', 'Enable service protection'],
+        falsePositives: ['Maintenance windows', 'Updates', 'Restarts']
+    },
+
+    // ===== MORE LATERAL MOVEMENT =====
+    'T1550': {
+        id: 'T1550',
+        name: 'Use Alternate Authentication Material',
+        tactic: 'Lateral Movement',
+        description: 'Adversaries use alternate authentication like pass-the-hash',
+        keywords: ['pass-the-hash', 'pass-the-ticket', 'pth', 'overpass', 'ntlm relay'],
+        logsToCheck: ['Windows Security Event 4624 (Type 9)', 'NTLM audit logs', 'Kerberos logs'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="Security";Id=4624} | Where-Object {$_.Properties[8].Value -eq 9}'],
+            linux: ['N/A - Windows/AD specific']
+        },
+        containment: ['Enable Credential Guard', 'Disable NTLM where possible', 'Reset compromised hashes'],
+        falsePositives: ['Legitimate delegation', 'Service accounts', 'SSO systems']
+    },
+
+    'T1021.002': {
+        id: 'T1021.002',
+        name: 'SMB/Windows Admin Shares',
+        tactic: 'Lateral Movement',
+        description: 'Adversaries use SMB shares for lateral movement',
+        keywords: ['smb', 'admin share', 'c$', 'admin$', 'ipc$', 'net use'],
+        logsToCheck: ['Windows Security Event 5140', 'SMB audit logs', 'Network traffic'],
+        commands: {
+            windows: ['Get-WinEvent -FilterHashtable @{LogName="Security";Id=5140} -MaxEvents 50', 'net share'],
+            linux: ['smbclient -L //target 2>/dev/null']
+        },
+        containment: ['Disable admin shares if not needed', 'Segment networks', 'Monitor SMB traffic'],
+        falsePositives: ['File sharing', 'IT management', 'Backup systems']
+    },
+
+    // ===== MORE C2 =====
+    'T1572': {
+        id: 'T1572',
+        name: 'Protocol Tunneling',
+        tactic: 'Command and Control',
+        description: 'Adversaries tunnel C2 over other protocols',
+        keywords: ['tunnel', 'dns tunnel', 'icmp tunnel', 'http tunnel', 'ssh tunnel'],
+        logsToCheck: ['DNS query logs', 'Network flow data', 'Firewall logs'],
+        commands: {
+            windows: ['Get-DnsClientCache | Where-Object {$_.Entry.Length -gt 50}', 'netstat -ano | findstr ESTABLISHED'],
+            linux: ['cat /var/log/named/queries.log | awk "{print length, $0}" | sort -rn | head -20']
+        },
+        containment: ['Block suspicious DNS', 'Enable DNS filtering', 'Monitor for anomalies'],
+        falsePositives: ['VPN tunnels', 'SSH legitimate use', 'DNS-based services']
+    },
+
+    'T1573': {
+        id: 'T1573',
+        name: 'Encrypted Channel',
+        tactic: 'Command and Control',
+        description: 'Adversaries use encryption to hide C2 traffic',
+        keywords: ['encrypted', 'ssl', 'tls', 'https', 'encrypted channel'],
+        logsToCheck: ['SSL/TLS inspection logs', 'Proxy logs', 'Certificate logs'],
+        commands: {
+            windows: ['Get-NetTCPConnection | Where-Object {$_.RemotePort -eq 443 -and $_.State -eq "Established"}'],
+            linux: ['ss -tunapl | grep ":443"']
+        },
+        containment: ['Block C2 domains', 'Enable SSL inspection', 'Monitor certificate anomalies'],
+        falsePositives: ['Normal HTTPS traffic', 'Cloud services', 'CDNs']
     }
 };
 

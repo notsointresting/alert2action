@@ -1,6 +1,6 @@
 {
   "name": "alert2action",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "SOC Alert to Investigation Guide CLI - Transform security alerts into actionable investigation playbooks with MITRE ATT&CK mapping",
   "main": "src/index.js",
   "bin": {

@@ -1,10 +1,19 @@
-# alert2action
+# 🚨 alert2action
 
 > **SOC Alert → Investigation Guide CLI**
 
 Transform security alerts into actionable investigation guides with MITRE ATT&CK mapping, investigation commands, and containment playbooks.
 
-![alert2action demo](https://img.shields.io/badge/SOC-Automation-blue) ![Node.js](https://img.shields.io/badge/node-%3E%3D14.0.0-green) ![License](https://img.shields.io/badge/license-MIT-brightgreen)
+[![npm version](https://img.shields.io/npm/v/alert2action.svg?style=flat-square)](https://www.npmjs.com/package/alert2action)
+[![npm downloads](https://img.shields.io/npm/dm/alert2action.svg?style=flat-square)](https://www.npmjs.com/package/alert2action)
+[![GitHub stars](https://img.shields.io/github/stars/notsointresting/alert2action?style=flat-square)](https://github.com/notsointresting/alert2action/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D14.0.0-green?style=flat-square)](https://nodejs.org)
+
+![MITRE ATT&CK](https://img.shields.io/badge/MITRE%20ATT%26CK-21%20Techniques-red?style=flat-square)
+![SOC](https://img.shields.io/badge/SOC-Automation-blue?style=flat-square)
+![Blue Team](https://img.shields.io/badge/Blue%20Team-Tool-purple?style=flat-square)
+![Incident Response](https://img.shields.io/badge/Incident%20Response-Ready-orange?style=flat-square)
 
 ## 🎯 What It Does
 

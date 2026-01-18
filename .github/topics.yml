@@ -1,0 +1,27 @@
+# GitHub Repository Settings
+# Note: Topics must be added manually in GitHub UI (Settings > About > Topics)
+
+# Recommended Topics for this repository:
+# security, cybersecurity, mitre-attack, soc, incident-response, 
+# threat-detection, cli, nodejs, siem, blue-team, infosec, 
+# security-tools, playbook, automation, threat-hunting, splunk, 
+# elastic, crowdstrike, sentinel, malware-analysis
+
+description: "🚨 Transform security alerts into SOC investigation guides with MITRE ATT&CK mapping, investigation commands, and containment playbooks"
+
+topics:
+  - security
+  - cybersecurity
+  - mitre-attack
+  - soc
+  - incident-response
+  - threat-detection
+  - cli
+  - nodejs
+  - siem
+  - blue-team
+  - infosec
+  - security-tools
+  - playbook
+  - automation
+  - threat-hunting

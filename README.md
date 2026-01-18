@@ -32,23 +32,27 @@ alert2action alert.json
 
 ## 🚀 Quick Start
 
-### Installation
+### Installation via npm (Recommended)
 
 ```bash
-# Clone and install
-git clone https://github.com/yourusername/alert-2-action.git
-cd alert-2-action
-npm install
-
-# Run on an example alert
-node bin/alert2action.js examples/brute-force-alert.json
+npm install -g alert2action
 ```
 
-### Global Installation (Optional)
+### Or Clone from GitHub
 
 ```bash
-npm link
-alert2action examples/malware-alert.json
+git clone https://github.com/yourusername/alert2action.git
+cd alert2action
+npm install
+npm link  # Makes it globally available
+```
+
+### Run on an Example Alert
+
+```bash
+alert2action examples/brute-force-alert.json
+# or
+node bin/alert2action.js examples/brute-force-alert.json
 ```
 
 ## 📋 Usage
@@ -103,16 +107,21 @@ alert2action automatically normalizes alerts from various sources:
 
 ## 🎯 MITRE ATT&CK Coverage
 
-Currently maps to these techniques (and growing):
+Currently maps to **21 techniques** across all major tactics:
 
 | Tactic | Techniques |
 |--------|------------|
+| Reconnaissance | T1595 (Active Scanning) |
 | Initial Access | T1566 (Phishing), T1190 (Exploit), T1078 (Valid Accounts) |
 | Execution | T1059 (Command/Script), T1059.001 (PowerShell) |
 | Persistence | T1053 (Scheduled Task), T1547 (Boot Autostart) |
+| Privilege Escalation | T1548.002 (UAC Bypass), T1134 (Token Manipulation) |
+| Defense Evasion | T1055 (Process Injection), T1070 (Indicator Removal) |
 | Credential Access | T1003 (Credential Dumping), T1110 (Brute Force) |
+| Discovery | T1087 (Account Discovery) |
 | Lateral Movement | T1021 (Remote Services) |
 | Command & Control | T1071 (Application Protocol) |
+| Exfiltration | T1041 (Exfil Over C2) |
 | Impact | T1486 (Ransomware) |
 
 ## 📂 Example Alerts Included
@@ -134,6 +143,12 @@ node bin/alert2action.js examples/credential-dump-alert.json
 
 # Lateral movement (PsExec)
 node bin/alert2action.js examples/lateral-movement-alert.json
+
+# Privilege escalation (UAC Bypass)
+node bin/alert2action.js examples/privesc-alert.json
+
+# Multi-stage attack (Encoded PS + C2 + Persistence)
+node bin/alert2action.js examples/soc-test-alert.json
 ```
 
 ## 🛠️ Programmatic Usage
@@ -155,12 +170,20 @@ console.log(guide);
 
 ## 🗺️ Roadmap
 
-- [ ] Add more MITRE techniques
-- [ ] Threat intelligence integration (VirusTotal, AbuseIPDB)
-- [ ] Export to TheHive case format
-- [ ] Splunk-specific field mapping
-- [ ] Interactive mode for guided investigation
-- [ ] Custom playbook templates
+### Coming Soon
+- [ ] **More MITRE techniques** - Expand to 50+ techniques
+- [ ] **Threat intelligence integration** - VirusTotal, AbuseIPDB, OTX lookups
+- [ ] **Export to TheHive** - Create cases directly from alerts
+- [ ] **Splunk-specific mapping** - Native Splunk field support
+- [ ] **Interactive mode** - Guided Q&A investigation workflow
+- [ ] **Custom playbook templates** - YAML-based playbook definitions
+
+### Future Ideas
+- [ ] Sigma rule suggestions
+- [ ] YARA rule generation
+- [ ] Timeline visualization
+- [ ] Multi-alert correlation
+- [ ] Webhook integrations (Slack, Teams, Discord)
 
 ## 🤝 Contributing
 

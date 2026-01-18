@@ -54,15 +54,15 @@ function parseAlert(rawAlert) {
     };
 
     // Try to extract from common field patterns
-    normalized.id = extractField(rawAlert, ['id', 'alert_id', 'event_id', 'alertId', 'eventId', '_id', 'uuid']);
-    normalized.title = extractField(rawAlert, ['title', 'name', 'alert_name', 'alertName', 'rule_name', 'ruleName', 'signature', 'event_type', 'eventType']);
-    normalized.description = extractField(rawAlert, ['description', 'message', 'msg', 'details', 'summary', 'reason']);
-    normalized.severity = normalizeSeverity(extractField(rawAlert, ['severity', 'priority', 'risk_level', 'riskLevel', 'threat_level', 'urgency', 'criticality']));
-    normalized.timestamp = extractField(rawAlert, ['timestamp', 'time', 'created_at', 'createdAt', 'detection_time', '@timestamp', 'event_time', 'eventTime']);
+    normalized.id = extractField(rawAlert, ['id', 'alert_id', 'event_id', 'alertId', 'eventId', '_id', 'uuid', 'host_id']);
+    normalized.title = extractField(rawAlert, ['title', 'name', 'alert_name', 'alertName', 'rule_name', 'ruleName', 'signature', 'event_type', 'eventType', 'rule_name', 'summary']);
+    normalized.description = extractField(rawAlert, ['description', 'message', 'msg', 'details', 'summary', 'reason', 'technique_details']);
+    normalized.severity = normalizeSeverity(extractField(rawAlert, ['severity', 'event_severity', 'priority', 'risk_level', 'riskLevel', 'threat_level', 'urgency', 'criticality']));
+    normalized.timestamp = extractField(rawAlert, ['timestamp', 'time', 'created_at', 'createdAt', 'detection_time', '@timestamp', 'event_time', 'eventTime', 'ingested_time']);
     normalized.source = extractField(rawAlert, ['source', 'product', 'vendor', 'tool', 'detector', 'data_source', 'log_source']);
 
     // Network
-    normalized.sourceIp = extractField(rawAlert, ['source_ip', 'sourceIp', 'src_ip', 'srcIp', 'src', 'attacker_ip', 'remote_ip', 'client_ip']);
+    normalized.sourceIp = extractField(rawAlert, ['source_ip', 'sourceIp', 'src_ip', 'srcIp', 'src', 'attacker_ip', 'remote_ip', 'client_ip', 'ip_address']);
     normalized.destIp = extractField(rawAlert, ['dest_ip', 'destIp', 'dst_ip', 'dstIp', 'dst', 'destination_ip', 'target_ip', 'server_ip', 'local_ip']);
     normalized.sourcePort = extractField(rawAlert, ['source_port', 'sourcePort', 'src_port', 'srcPort']);
     normalized.destPort = extractField(rawAlert, ['dest_port', 'destPort', 'dst_port', 'dstPort', 'port']);
@@ -70,25 +70,25 @@ function parseAlert(rawAlert) {
 
     // Host
     normalized.hostname = extractField(rawAlert, ['hostname', 'host', 'computer_name', 'computerName', 'machine', 'device_name', 'endpoint']);
-    normalized.username = extractField(rawAlert, ['username', 'user', 'user_name', 'userName', 'account', 'account_name', 'actor']);
+    normalized.username = extractField(rawAlert, ['username', 'user', 'user_name', 'userName', 'account', 'account_name', 'actor', 'original_user', 'escalated_user']);
     normalized.domain = extractField(rawAlert, ['domain', 'domain_name', 'ad_domain']);
 
     // Process
-    normalized.processName = extractField(rawAlert, ['process_name', 'processName', 'process', 'image', 'exe', 'executable']);
-    normalized.processPath = extractField(rawAlert, ['process_path', 'processPath', 'image_path', 'file_path', 'exe_path']);
+    normalized.processName = extractField(rawAlert, ['process_name', 'processName', 'process', 'image', 'exe', 'executable', 'suspicious_binary']);
+    normalized.processPath = extractField(rawAlert, ['process_path', 'processPath', 'image_path', 'file_path', 'exe_path', 'service_binary']);
     normalized.processCommandLine = extractField(rawAlert, ['command_line', 'commandLine', 'cmdline', 'cmd', 'process_command_line', 'command']);
     normalized.parentProcess = extractField(rawAlert, ['parent_process', 'parentProcess', 'parent_image', 'parent']);
     normalized.processId = extractField(rawAlert, ['process_id', 'processId', 'pid']);
 
     // File
-    normalized.filePath = extractField(rawAlert, ['file_path', 'filePath', 'path', 'target_path']);
+    normalized.filePath = extractField(rawAlert, ['file_path', 'filePath', 'path', 'target_path', 'service_binary']);
     normalized.fileHash = extractField(rawAlert, ['file_hash', 'fileHash', 'hash', 'md5', 'sha256', 'sha1']);
-    normalized.fileName = extractField(rawAlert, ['file_name', 'fileName', 'filename', 'file']);
+    normalized.fileName = extractField(rawAlert, ['file_name', 'fileName', 'filename', 'file', 'suspicious_binary']);
 
     // Context
-    normalized.category = extractField(rawAlert, ['category', 'type', 'alert_type', 'alertType', 'tactic', 'technique']);
-    normalized.action = extractField(rawAlert, ['action', 'event_action', 'result', 'outcome']);
-    normalized.status = extractField(rawAlert, ['status', 'state', 'resolution']);
+    normalized.category = extractField(rawAlert, ['category', 'type', 'alert_type', 'alertType', 'tactic', 'technique', 'method', 'vector']);
+    normalized.action = extractField(rawAlert, ['action', 'event_action', 'result', 'outcome', 'success']);
+    normalized.status = extractField(rawAlert, ['status', 'state', 'resolution', 'event_status', 'isolation_status']);
     normalized.eventType = extractField(rawAlert, ['event_type', 'eventType', 'type', 'activity_type']);
 
     // Extract keywords for MITRE mapping
@@ -100,19 +100,40 @@ function parseAlert(rawAlert) {
 
 /**
  * Extract a field value from multiple possible field names
+ * Searches top-level, common nested paths, and deeply nested objects
  */
 function extractField(obj, fieldNames) {
     for (const field of fieldNames) {
         // Check top level
         if (obj[field] !== undefined && obj[field] !== null && obj[field] !== '') {
-            return obj[field];
+            // If it's an object (like host: {hostname: ...}), skip it
+            if (typeof obj[field] !== 'object') {
+                return obj[field];
+            }
         }
 
-        // Check nested common paths
-        const nestedPaths = ['data', 'event', 'alert', 'result', 'fields', 'source'];
+        // Check nested common paths (expanded for more formats)
+        const nestedPaths = [
+            'data', 'event', 'alert', 'result', 'fields', 'source',
+            'host', 'user', 'process', 'file', 'network', 'destination',
+            'file_activity', 'persistence', 'detection', 'exploitation',
+            'privilege_change', 'ioc', 'analyst_notes', 'hashes'
+        ];
         for (const path of nestedPaths) {
-            if (obj[path] && obj[path][field] !== undefined) {
-                return obj[path][field];
+            if (obj[path] && typeof obj[path] === 'object') {
+                if (obj[path][field] !== undefined && obj[path][field] !== null && obj[path][field] !== '') {
+                    if (typeof obj[path][field] !== 'object') {
+                        return obj[path][field];
+                    }
+                }
+                // Check one level deeper (e.g., host.os.name)
+                for (const subPath of Object.keys(obj[path])) {
+                    if (typeof obj[path][subPath] === 'object' && obj[path][subPath]) {
+                        if (obj[path][subPath][field] !== undefined) {
+                            return obj[path][subPath][field];
+                        }
+                    }
+                }
             }
         }
     }
@@ -168,34 +189,72 @@ function extractKeywords(alert) {
     // Extract from title and description
     const textFields = [alert.title, alert.description, alert.category, alert.eventType, alert.action];
     const keywordPatterns = [
-        // Authentication
+        // Authentication & Brute Force
         'brute force', 'login', 'authentication', 'credential', 'password', 'logon', 'failed login',
+        'password spray', 'credential stuffing', 'account lockout',
+
         // Execution
         'powershell', 'cmd', 'script', 'execution', 'wscript', 'cscript', 'macro', 'command line',
+        'living off the land', 'lolbin', 'mshta', 'regsvr32', 'rundll32', 'certutil',
+
         // Persistence
         'registry', 'scheduled task', 'service', 'startup', 'autorun', 'persistence',
+        'cron', 'boot', 'wmi subscription', 'service creation',
+
         // Privilege Escalation
-        'privilege', 'escalation', 'admin', 'root', 'sudo', 'elevation',
+        'privilege', 'escalation', 'admin', 'root', 'sudo', 'elevation', 'uac bypass',
+        'token manipulation', 'impersonation', 'system', 'kernel exploit', 'setuid',
+
         // Defense Evasion
         'obfuscation', 'encoded', 'base64', 'hidden', 'masquerading', 'disable', 'bypass',
+        'process injection', 'dll injection', 'hollowing', 'av evasion', 'edr tampering',
+        'log clearing', 'timestomp', 'signed binary', 'code signing',
+
         // Credential Access
-        'mimikatz', 'lsass', 'credential dump', 'hash', 'kerberos', 'ntlm',
+        'mimikatz', 'lsass', 'credential dump', 'hash', 'kerberos', 'ntlm', 'keylogger',
+        'password store', 'browser credential', 'sam', 'ntds', 'dcSync',
+
         // Discovery
         'enumeration', 'reconnaissance', 'scan', 'discovery', 'query', 'whoami',
+        'network scan', 'port scan', 'service enumeration', 'account discovery',
+        'domain enumeration', 'process discovery', 'system information',
+
         // Lateral Movement
-        'lateral', 'psexec', 'wmi', 'remote', 'smb', 'rdp', 'ssh',
+        'lateral', 'psexec', 'wmi', 'remote', 'smb', 'rdp', 'ssh', 'winrm',
+        'pass the hash', 'pass the ticket', 'remote service', 'dcom',
+
         // Collection
-        'data collection', 'keylogger', 'screenshot', 'clipboard',
+        'data collection', 'keylogger', 'screenshot', 'clipboard', 'archive', 'staging',
+
+        // Command and Control
+        'c2', 'command and control', 'beacon', 'callback', 'beaconing',
+        'dns tunneling', 'encrypted channel', 'proxy', 'covert channel',
+
         // Exfiltration
-        'exfiltration', 'data transfer', 'upload', 'c2', 'command and control', 'beacon',
+        'exfiltration', 'data transfer', 'upload', 'data theft', 'large transfer',
+        'cloud exfil', 'ftp', 'dns exfil',
+
         // Impact
-        'ransomware', 'encrypt', 'wipe', 'destruct', 'delete',
+        'ransomware', 'encrypt', 'wipe', 'destruct', 'delete', 'defacement',
+        'resource hijacking', 'cryptomining', 'dos', 'denial of service',
+
         // Malware
         'malware', 'virus', 'trojan', 'worm', 'backdoor', 'rat', 'rootkit',
-        // Network
+        'dropper', 'loader', 'implant',
+
+        // Network & Initial Access  
         'phishing', 'spam', 'suspicious', 'anomaly', 'unusual', 'dns', 'http', 'https',
-        // File
-        'suspicious file', 'malicious', 'dropper', 'payload'
+        'drive-by', 'exploit', 'vulnerability', 'cve', 'web shell',
+
+        // File & Payload
+        'suspicious file', 'malicious', 'dropper', 'payload', 'attachment',
+
+        // Identity & Compliance
+        'impossible travel', 'privileged login', 'service account', 'oauth',
+        'policy violation', 'audit', 'compliance', 'configuration drift',
+
+        // Threat Intel
+        'ioc', 'indicator', 'threat intel', 'behavior anomaly', 'threat hunt'
     ];
 
     for (const text of textFields) {

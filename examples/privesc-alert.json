@@ -1,0 +1,112 @@
+{
+    "event_version": "2.1",
+    "event_id": "privesc-3c91a8f2-4e67-4b2f-bb8a-91aef3d27b11",
+    "event_type": "privilege_escalation",
+    "event_severity": "critical",
+    "event_status": "active",
+    "event_time": "2026-01-18T09:41:12.556Z",
+    "ingested_time": "2026-01-18T09:41:14.102Z",
+    "host": {
+        "hostname": "FINANCE-LAPTOP-014",
+        "host_id": "e92b1c14-12a3-4d8b-9f81-7c88a1b27b45",
+        "ip_address": "10.0.8.47",
+        "os": {
+            "name": "Windows 11 Enterprise",
+            "version": "23H2",
+            "build": "22631.3085"
+        }
+    },
+    "user": {
+        "original_user": "jdoe",
+        "original_privilege": "standard_user",
+        "escalated_user": "NT AUTHORITY\\SYSTEM",
+        "logon_type": "service",
+        "session_id": "0x3e7"
+    },
+    "process": {
+        "process_name": "cmd.exe",
+        "process_id": 5236,
+        "parent_process": "winlogon.exe",
+        "parent_process_id": 732,
+        "command_line": "cmd.exe /c whoami",
+        "integrity_level": "System",
+        "token_elevation": true
+    },
+    "privilege_change": {
+        "method": "UAC Bypass",
+        "technique_details": "Abuse of auto-elevated COM interface",
+        "success": true,
+        "previous_integrity_level": "Medium",
+        "new_integrity_level": "System"
+    },
+    "exploitation": {
+        "vector": "Local",
+        "exploit_name": "SilentCleanup UAC Bypass",
+        "cve": null,
+        "exploited_component": "Task Scheduler / COM Interface"
+    },
+    "file_activity": {
+        "suspicious_binary": "payload.exe",
+        "file_path": "C:\\Users\\jdoe\\AppData\\Local\\Temp\\payload.exe",
+        "hashes": {
+            "md5": "9e107d9d372bb6826bd81d3542a419d6",
+            "sha256": "6a2da5b9a21dfd7c83e28efc6c6fd4d4a7c3fdafad7c5f3f4c87bb1ad9d4f223"
+        }
+    },
+    "persistence": {
+        "mechanism": "Service Creation",
+        "service_name": "WindowsUpdateHelper",
+        "service_binary": "C:\\ProgramData\\WindowsUpdateHelper\\wuhelper.exe",
+        "start_type": "auto"
+    },
+    "mitre_attack": {
+        "tactic": "Privilege Escalation",
+        "techniques": [
+            {
+                "id": "T1548.002",
+                "name": "Bypass User Account Control"
+            },
+            {
+                "id": "T1134",
+                "name": "Access Token Manipulation"
+            },
+            {
+                "id": "T1059.003",
+                "name": "Windows Command Shell"
+            }
+        ]
+    },
+    "detection": {
+        "source": "EDR",
+        "rule_name": "Suspicious SYSTEM-Level Process Spawn",
+        "confidence": 0.94,
+        "indicators": [
+            "standard_user_to_SYSTEM",
+            "unexpected_SYSTEM_shell",
+            "auto_elevated_process"
+        ]
+    },
+    "response": {
+        "actions_taken": [
+            "process_terminated",
+            "service_disabled",
+            "file_quarantined",
+            "host_isolated"
+        ],
+        "isolation_status": "enabled",
+        "analyst_notified": true
+    },
+    "analyst_notes": {
+        "assigned_to": "soc_analyst_l2",
+        "summary": "Privilege escalation achieved via UAC bypass. SYSTEM shell spawned from standard user context. Persistence established through rogue service."
+    },
+    "ioc": {
+        "host": "FINANCE-LAPTOP-014",
+        "user": "jdoe",
+        "process": "payload.exe",
+        "service": "WindowsUpdateHelper",
+        "hashes": [
+            "6a2da5b9a21dfd7c83e28efc6c6fd4d4a7c3fdafad7c5f3f4c87bb1ad9d4f223"
+        ]
+    }
+}

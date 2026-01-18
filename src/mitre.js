@@ -5,6 +5,44 @@
 
 // Comprehensive MITRE ATT&CK technique database with investigation guidance
 const MITRE_TECHNIQUES = {
+    // ===== RECONNAISSANCE (TA0043) =====
+    'T1595': {
+        id: 'T1595',
+        name: 'Active Scanning',
+        tactic: 'Reconnaissance',
+        description: 'Adversaries actively scan victim infrastructure to gather information',
+        keywords: ['port scan', 'network scan', 'vulnerability scan', 'service enumeration', 'nmap', 'masscan', 'reconnaissance'],
+        logsToCheck: [
+            'Firewall logs (denied connections)',
+            'IDS/IPS alerts',
+            'Web server access logs',
+            'Network flow data'
+        ],
+        commands: {
+            windows: [
+                'Get-WinEvent -LogName "Security" | Where-Object {$_.Id -eq 5156 -and $_.Message -match "Inbound"}',
+                'netsh advfirewall firewall show rule name=all | findstr "Block"'
+            ],
+            linux: [
+                'cat /var/log/syslog | grep -i "blocked\\|denied"',
+                'iptables -L -n -v | grep DROP',
+                'grep -i "refused\\|scan" /var/log/messages'
+            ]
+        },
+        containment: [
+            'Block scanning source IP at firewall',
+            'Enable rate limiting on border devices',
+            'Review exposed services and reduce attack surface',
+            'Consider honey pots for threat intelligence'
+        ],
+        falsePositives: [
+            'Legitimate security scanners (Nessus, Qualys)',
+            'IT inventory/asset discovery tools',
+            'Network monitoring systems',
+            'Authorized penetration testing'
+        ]
+    },
+
     // ===== INITIAL ACCESS (TA0001) =====
     'T1566': {
         id: 'T1566',
@@ -267,6 +305,86 @@ const MITRE_TECHNIQUES = {
         ]
     },
 
+    // ===== PRIVILEGE ESCALATION (TA0004) =====
+    'T1548.002': {
+        id: 'T1548.002',
+        name: 'Bypass User Account Control',
+        tactic: 'Privilege Escalation',
+        description: 'Adversaries bypass UAC to elevate privileges without prompting the user',
+        keywords: ['uac bypass', 'privilege escalation', 'elevation', 'system', 'admin', 'token_elevation', 'integrity_level', 'auto-elevated', 'silentcleanup'],
+        logsToCheck: [
+            'Sysmon Event ID 1 (Process Creation with elevated token)',
+            'Windows Security Event ID 4688 (Process Creation)',
+            'Windows Security Event ID 4648 (Explicit Credential Use)',
+            'UAC Event ID 1 in Application Log'
+        ],
+        commands: {
+            windows: [
+                'Get-WinEvent -FilterHashtable @{LogName="Security";Id=4688} | Where-Object {$_.Message -match "TokenElevationType.*%%1937"}',
+                'Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational";Id=1} | Where-Object {$_.Message -match "IntegrityLevel.*System|High"}',
+                'Get-ScheduledTask | Where-Object {$_.Principal.RunLevel -eq "Highest"} | Select-Object TaskName,TaskPath',
+                'reg query "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System" /v EnableLUA'
+            ],
+            linux: [
+                'cat /var/log/auth.log | grep -i "sudo\\|su "',
+                'ausearch -m USER_AUTH -ts today'
+            ]
+        },
+        containment: [
+            'IMMEDIATELY isolate endpoint - active compromise',
+            'Terminate elevated processes spawned by attack',
+            'Review and remove any malicious scheduled tasks',
+            'Check for persistence mechanisms (services, registry)',
+            'Force password reset for affected user',
+            'Enable UAC highest setting and investigate bypass method'
+        ],
+        falsePositives: [
+            'Legitimate auto-elevation by installers',
+            'Administrative tools with manifest requesting elevation',
+            'Windows Update and maintenance tasks',
+            'Enterprise software deployment'
+        ]
+    },
+
+    'T1134': {
+        id: 'T1134',
+        name: 'Access Token Manipulation',
+        tactic: 'Privilege Escalation',
+        description: 'Adversaries manipulate access tokens to operate under different security contexts',
+        keywords: ['token', 'impersonation', 'privilege', 'system', 'token_elevation', 'logon_type', 'security context'],
+        logsToCheck: [
+            'Windows Security Event ID 4624 (Logon with token info)',
+            'Windows Security Event ID 4672 (Special Privileges Assigned)',
+            'Sysmon Event ID 10 (Process Access)',
+            'Windows Security Event ID 4673 (Privileged Service Called)'
+        ],
+        commands: {
+            windows: [
+                'Get-WinEvent -FilterHashtable @{LogName="Security";Id=4672} -MaxEvents 50 | Format-List',
+                'whoami /priv',
+                'Get-Process | Where-Object {$_.SessionId -eq 0} | Select-Object Name,Id,SessionId',
+                'Get-WinEvent -FilterHashtable @{LogName="Security";Id=4624} | Where-Object {$_.Properties[8].Value -eq 9}'
+            ],
+            linux: [
+                'ps aux | grep -E "^root.*pts"',
+                'cat /var/log/auth.log | grep -i "session opened for user root"'
+            ]
+        },
+        containment: [
+            'Terminate processes using stolen/manipulated tokens',
+            'Isolate affected system',
+            'Force logoff all sessions on compromised host',
+            'Reset credentials for impersonated accounts',
+            'Review all SYSTEM-level processes for malicious activity'
+        ],
+        falsePositives: [
+            'Service accounts running as SYSTEM',
+            'Scheduled tasks running with elevated privileges',
+            'Windows services performing impersonation',
+            'Remote management tools'
+        ]
+    },
+
     // ===== CREDENTIAL ACCESS (TA0006) =====
     'T1003': {
         id: 'T1003',
@@ -301,6 +419,158 @@ const MITRE_TECHNIQUES = {
             'Antivirus scanning LSASS',
             'Windows Defender ATP collecting telemetry',
             'Legitimate security tools'
+        ]
+    },
+
+    // ===== DEFENSE EVASION (TA0005) =====
+    'T1055': {
+        id: 'T1055',
+        name: 'Process Injection',
+        tactic: 'Defense Evasion',
+        description: 'Adversaries inject code into processes to evade defenses',
+        keywords: ['process injection', 'dll injection', 'hollowing', 'code injection', 'remote thread'],
+        logsToCheck: [
+            'Sysmon Event ID 8 (CreateRemoteThread)',
+            'Sysmon Event ID 10 (Process Access)',
+            'Windows Security Event ID 4688',
+            'EDR process injection alerts'
+        ],
+        commands: {
+            windows: [
+                'Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational";Id=8} | Select-Object -First 20',
+                'Get-Process | Where-Object {$_.Modules.Count -gt 100} | Select-Object Name,Id',
+                'malfind (Volatility plugin on memory dump)'
+            ],
+            linux: [
+                'cat /proc/[pid]/maps | grep rwx',
+                'grep -r "LD_PRELOAD" /proc/*/environ 2>/dev/null'
+            ]
+        },
+        containment: [
+            'Isolate affected endpoint',
+            'Capture memory dump before terminating processes',
+            'Identify injected code and parent process',
+            'Block malicious process hashes'
+        ],
+        falsePositives: [
+            'Antivirus real-time scanning',
+            'Application compatibility shims',
+            'Debugging tools',
+            'Some legitimate software hooks'
+        ]
+    },
+
+    'T1070': {
+        id: 'T1070',
+        name: 'Indicator Removal',
+        tactic: 'Defense Evasion',
+        description: 'Adversaries delete or modify artifacts to hide their activity',
+        keywords: ['log clearing', 'indicator removal', 'timestomp', 'file deletion', 'event log', 'audit'],
+        logsToCheck: [
+            'Windows Security Event ID 1102 (Audit Log Cleared)',
+            'Windows Security Event ID 104 (System Log Cleared)',
+            'Sysmon Event ID 23 (File Delete)',
+            'File integrity monitoring alerts'
+        ],
+        commands: {
+            windows: [
+                'Get-WinEvent -FilterHashtable @{LogName="Security";Id=1102} -MaxEvents 10',
+                'Get-WinEvent -FilterHashtable @{LogName="System";Id=104} -MaxEvents 10',
+                'wevtutil el | ForEach-Object {wevtutil gli $_} | Where-Object {$_ -match "numberOfLogRecords: 0"}'
+            ],
+            linux: [
+                'ls -la /var/log/ | grep "^-.*0"',
+                'stat /var/log/auth.log',
+                'ausearch -m DEL -ts today'
+            ]
+        },
+        containment: [
+            'Preserve remaining logs immediately',
+            'Enable centralized logging if not configured',
+            'Check for backup log copies',
+            'Review shadow copies for deleted evidence'
+        ],
+        falsePositives: [
+            'Log rotation',
+            'System administrators clearing old logs',
+            'Storage cleanup scripts'
+        ]
+    },
+
+    // ===== DISCOVERY (TA0007) =====
+    'T1087': {
+        id: 'T1087',
+        name: 'Account Discovery',
+        tactic: 'Discovery',
+        description: 'Adversaries enumerate accounts to understand the environment',
+        keywords: ['account discovery', 'user enumeration', 'net user', 'domain users', 'whoami'],
+        logsToCheck: [
+            'Windows Security Event ID 4798, 4799',
+            'Sysmon Event ID 1 (net.exe usage)',
+            'LDAP query logs',
+            'Active Directory audit logs'
+        ],
+        commands: {
+            windows: [
+                'Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational";Id=1} | Where-Object {$_.Message -match "net user|net group|dsquery"}',
+                'Get-ADUser -Filter * -Properties LastLogonDate | Where-Object {$_.LastLogonDate -gt (Get-Date).AddDays(-7)}',
+                'Get-WinEvent -LogName "Security" | Where-Object {$_.Id -in @(4798,4799)}'
+            ],
+            linux: [
+                'grep -E "getent|ldapsearch|cat.*passwd" /var/log/auth.log',
+                'ausearch -c getent -ts today'
+            ]
+        },
+        containment: [
+            'Review if enumeration was from compromised account',
+            'Limit LDAP query permissions',
+            'Enable detailed AD auditing',
+            'Monitor for subsequent lateral movement'
+        ],
+        falsePositives: [
+            'IT admin account audits',
+            'HR onboarding scripts',
+            'Directory sync tools',
+            'Help desk user lookups'
+        ]
+    },
+
+    // ===== EXFILTRATION (TA0010) =====
+    'T1041': {
+        id: 'T1041',
+        name: 'Exfiltration Over C2 Channel',
+        tactic: 'Exfiltration',
+        description: 'Adversaries exfiltrate data over existing command and control channels',
+        keywords: ['exfiltration', 'data theft', 'data transfer', 'large transfer', 'upload', 'data exfil'],
+        logsToCheck: [
+            'Proxy/Firewall logs (large outbound transfers)',
+            'DLP alerts',
+            'Cloud access security broker (CASB) logs',
+            'Network flow data'
+        ],
+        commands: {
+            windows: [
+                'Get-NetTCPConnection | Where-Object {$_.State -eq "Established"} | Sort-Object -Property OwningProcess | Select-Object -First 20',
+                'Get-WinEvent -LogName "Microsoft-Windows-Sysmon/Operational" | Where-Object {$_.Id -eq 3 -and $_.Message -match "Destination.*:443|:80"}'
+            ],
+            linux: [
+                'ss -tunapl | sort -nk5 | tail -20',
+                'nethogs -v 3',
+                'iftop -t -s 10'
+            ]
+        },
+        containment: [
+            'Block C2 communication immediately',
+            'Identify and preserve exfiltrated data scope',
+            'Check DLP logs for data classification',
+            'Notify legal/compliance for breach assessment',
+            'Preserve network captures for forensics'
+        ],
+        falsePositives: [
+            'Large legitimate file uploads (backups)',
+            'Video conferencing',
+            'Cloud sync services',
+            'Software updates'
         ]
     },
 

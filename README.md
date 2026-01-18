@@ -198,11 +198,14 @@ console.log(guide);
 
 ## 🗺️ Roadmap
 
+### ✅ Completed in v1.1.0
+- [x] **51 MITRE techniques** - Expanded from 21 to 51
+- [x] **VirusTotal integration** - Enrich IPs and hashes with `--enrich`
+- [x] **TheHive export** - Export to TheHive case format with `-o thehive`
+- [x] **Splunk CIM mapping** - Native Splunk field support (50+ fields)
+
 ### Coming Soon
-- [ ] **More MITRE techniques** - Expand to 50+ techniques
-- [ ] **Threat intelligence integration** - VirusTotal, AbuseIPDB, OTX lookups
-- [ ] **Export to TheHive** - Create cases directly from alerts
-- [ ] **Splunk-specific mapping** - Native Splunk field support
+- [ ] **AbuseIPDB integration** - Check IP reputation
 - [ ] **Interactive mode** - Guided Q&A investigation workflow
 - [ ] **Custom playbook templates** - YAML-based playbook definitions
 
